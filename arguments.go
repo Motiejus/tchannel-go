@@ -29,13 +29,13 @@ import (
 
 // ArgReadHelper providers a simpler interface to reading arguments.
 type ArgReadHelper struct {
-	reader io.ReadCloser
+	reader ArgReader
 	err    error
 }
 
 // NewArgReader wraps the result of calling ArgXReader to provide a simpler
 // interface for reading arguments.
-func NewArgReader(reader io.ReadCloser, err error) ArgReadHelper {
+func NewArgReader(reader ArgReader, err error) ArgReadHelper {
 	return ArgReadHelper{reader, err}
 }
 
