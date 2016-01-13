@@ -39,6 +39,7 @@ var (
 	errNoMoreFragments          = errors.New("no more fragments")
 )
 
+// TODO: move to arguments.go
 type ArgReader interface {
 	io.ReadCloser
 }

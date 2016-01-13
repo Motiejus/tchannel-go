@@ -22,6 +22,7 @@ package http
 
 import "github.com/uber/tchannel-go"
 
+// TODO move to arguments.go
 
 type argWriter interface {
 	Arg2Writer() (tchannel.ArgWriter, error)
