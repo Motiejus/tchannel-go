@@ -21,7 +21,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"golang.org/x/net/context"
@@ -41,14 +40,9 @@ type Ping struct {
 type Pong Ping
 
 func pingHandler(ctx json.Context, ping *Ping) (*Pong, error) {
+	log.Infof("recv ping: '%s', sending pong", ping.Message)
 	return &Pong{
-		Message: fmt.Sprintf("ping %v", ping),
-	}, nil
-}
-
-func pingOtherHandler(ctx json.Context, ping *Ping) (*Pong, error) {
-	return &Pong{
-		Message: fmt.Sprintf("pingOther %v", ping),
+		Message: ping.Message,
 	}, nil
 }
 
@@ -88,32 +82,24 @@ func main() {
 	if err != nil {
 		log.WithFields(tchannel.ErrField(err)).Fatal("Couldn't create new client channel.")
 	}
+	for {
+		pinger(ch, client)
+		time.Sleep(10 * time.Second)
+	}
+}
 
+func pinger(ch *tchannel.Channel, client *tchannel.Channel) {
 	// Make a call to ourselves, with a timeout of 10s
 	ctx, cancel := json.NewContext(time.Second * 10)
 	defer cancel()
-
 	peer := client.Peers().Add(ch.PeerInfo().HostPort)
-
 	var pong Pong
-	if err := json.CallPeer(ctx, peer, "PingService", "ping", &Ping{"Hello World"}, &pong); err != nil {
-		log.WithFields(tchannel.ErrField(err)).Fatal("json.Call failed.")
+
+	var now string = time.Now().Format(time.UnixDate)
+	log.Infof("send ping: '%s'", now)
+	if err := json.CallPeer(ctx, peer, "PingService", "ping", &Ping{now}, &pong); err != nil {
+		log.WithFields(tchannel.ErrField(err)).Error("json.Call failed.")
 	}
 
-	log.Infof("Received pong: %s", pong.Message)
-
-	// Create a new subchannel for the top-level channel
-	subCh := ch.GetSubChannel("PingServiceOther")
-
-	// Register a handler on the subchannel
-	json.Register(subCh, json.Handlers{
-		"pingOther": pingOtherHandler,
-	}, onError)
-
-	// Try to send a message to the Service:Method pair for the subchannel
-	if err := json.CallPeer(ctx, peer, "PingServiceOther", "pingOther", &Ping{"Hello Other World"}, &pong); err != nil {
-		log.WithFields(tchannel.ErrField(err)).Fatal("json.Call failed.")
-	}
-
-	log.Infof("Received pong: %s", pong.Message)
+	log.Infof("recv pong: '%s'", pong.Message)
 }
